@@ -3,7 +3,6 @@ const Driver = require('../models/driverModel');
 const appError = require('../utils/appError');
 
 // Create a new driver
-
 const createDriver = async(req, res, next)=>{
     const { id, name, licenseType, availability } = req.body;
     const existingDriverId = await Driver.findOne({ id });
