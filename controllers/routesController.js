@@ -19,7 +19,6 @@ const createRoute = async(req,res,next)=>{
     if (availableDriver) {
         newRoute.assignedDriver = availableDriver._id;
         availableDriver.availability = false;
-        availableDriver.history.push(newRoute._id);
         availableDriver.currentRoute = newRoute._id;
         await availableDriver.save();
     }else{
@@ -116,6 +115,7 @@ const updateRouteStatus = async (req, res, next) => {
             driver.availability = true; 
             driver.completedRoutesCount += 1; 
             driver.currentRoute = null; 
+            driver.history.push(route._id);
             await driver.save();
         }
     }else if(status === "active" && !route.assignedDriver){
@@ -152,22 +152,19 @@ const assignDriverToRoute = async (req, res, next) => {
     return next(appError.create("Route already has an assigned driver", 400, "fail"));
   }
 
-  // شرط البحث
   const driverFilter = { availability: true };
   if (requiredType) driverFilter.licenseType = requiredType;
 
-  // Find and update driver atomically
   const availableDriver = await Driver.findOneAndUpdate(
     driverFilter,
-    { $set: { availability: false, currentRoute: route._id }, $push: { history: route._id } },
-    { sort: { completedRoutesCount: 1 }, new: true } // new: true => يرجع الـ document بعد التحديث
+    { $set: { availability: false, currentRoute: route._id } },
+    { sort: { completedRoutesCount: 1 }, new: true }
   );
 
   if (!availableDriver) {
     return next(appError.create("No available drivers found", 404, "fail"));
   }
 
-  // Assign driver to route
   route.assignedDriver = availableDriver._id;
   route.status = "active";
   await route.save();
